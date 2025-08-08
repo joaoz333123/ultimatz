@@ -1,0 +1,257 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  accounts      Account[]
+  sessions      Session[]
+  projects      ProjectMember[]
+  budgets       Budget[]
+  approvals     Approval[]
+  chats         Chat[]
+  workflowSteps WorkflowStep[]
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model Project {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  status      ProjectStatus @default(ACTIVE)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  members ProjectMember[]
+  budgets Budget[]
+}
+
+model ProjectMember {
+  id        String       @id @default(cuid())
+  projectId String
+  userId    String
+  role      ProjectRole  @default(MEMBER)
+  joinedAt  DateTime     @default(now())
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, userId])
+}
+
+model Budget {
+  id          String   @id @default(cuid())
+  projectId   String
+  userId      String
+  name        String
+  description String?
+  amount      Float
+  spent       Float    @default(0)
+  status      BudgetStatus @default(PENDING)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  project   Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  approvals Approval[]
+  documents Document[]
+  workflowInstances WorkflowInstance[]
+}
+
+model Approval {
+  id        String        @id @default(cuid())
+  budgetId  String
+  userId    String
+  status    ApprovalStatus @default(PENDING)
+  comment   String?
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  budget Budget @relation(fields: [budgetId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Document {
+  id        String       @id @default(cuid())
+  budgetId  String
+  name      String
+  type      DocumentType
+  size      Int
+  url       String
+  createdAt DateTime     @default(now())
+
+  budget Budget @relation(fields: [budgetId], references: [id], onDelete: Cascade)
+}
+
+model Chat {
+  id        String   @id @default(cuid())
+  userId    String
+  message   String
+  response  String?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Report {
+  id          String   @id @default(cuid())
+  name        String
+  type        ReportType
+  data        String
+  createdAt   DateTime @default(now())
+}
+
+// Workflow Builder Models
+model Workflow {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  steps WorkflowStep[]
+  instances WorkflowInstance[]
+}
+
+model WorkflowStep {
+  id          String   @id @default(cuid())
+  workflowId  String
+  stepNumber  Int
+  name        String
+  type        WorkflowStepType
+  approverId  String?
+  approverType ApproverType?
+  isRequired  Boolean  @default(true)
+  timeoutDays Int      @default(3)
+  conditions  String?  // JSON string for conditions
+  createdAt   DateTime @default(now())
+
+  workflow Workflow @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  approver User?    @relation(fields: [approverId], references: [id], onDelete: SetNull)
+}
+
+model WorkflowInstance {
+  id          String   @id @default(cuid())
+  budgetId    String
+  workflowId  String
+  currentStep Int      @default(1)
+  status      WorkflowInstanceStatus @default(PENDING)
+  startedAt   DateTime @default(now())
+  completedAt DateTime?
+
+  budget   Budget   @relation(fields: [budgetId], references: [id], onDelete: Cascade)
+  workflow Workflow @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+}
+
+enum ProjectStatus {
+  ACTIVE
+  INACTIVE
+  ARCHIVED
+}
+
+enum ProjectRole {
+  OWNER
+  ADMIN
+  MEMBER
+  VIEWER
+}
+
+enum BudgetStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  COMPLETED
+}
+
+enum ApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum DocumentType {
+  PDF
+  IMAGE
+  SPREADSHEET
+  OTHER
+}
+
+enum ReportType {
+  BUDGET_SUMMARY
+  EXPENSE_ANALYSIS
+  APPROVAL_STATUS
+  CUSTOM
+}
+
+enum WorkflowStepType {
+  START
+  APPROVER
+  CONDITION
+  ACTION
+  END
+}
+
+enum ApproverType {
+  USER
+  ROLE
+  DEPARTMENT
+}
+
+enum WorkflowInstanceStatus {
+  PENDING
+  IN_PROGRESS
+  APPROVED
+  REJECTED
+  COMPLETED
+  CANCELLED
+}

@@ -1,0 +1,8 @@
+{
+  "buildCommand": "cd ultimatz && npm install && npm run build",
+  "outputDirectory": "ultimatz/.next",
+  "framework": "nextjs",
+  "installCommand": "cd ultimatz && npm install",
+  "devCommand": "cd ultimatz && npm run dev",
+  "regions": ["gru1"]
+}
