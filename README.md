@@ -85,6 +85,46 @@ npm run build
 3. **Marketing**: Implementar estratégias de SEO e marketing digital
 4. **Analytics**: Configurar tracking de conversões
 
+## 🔍 Auditoria de Integração (jan/2025)
+
+### Status operacional
+
+- ✅ `npm run build` do site institucional Ultimatz (com `NEXT_DISABLE_FONT_DOWNLOADS=1` no script de build)
+- ✅ `npm run build` do AppFin após ajustar `useSearchParams` com `Suspense`
+- ✅ Rota `/appfin` no site principal com fallback guiado e redirecionamento quando `NEXT_PUBLIC_APPFIN_URL` está definida
+- ⚠️ Aviso recorrente do Next.js sobre múltiplos `package-lock.json` (raiz e subprojetos). Mantido como está porque os projetos são independentes, mas vale alinhar no deploy
+
+### Problemas corrigidos nesta auditoria
+
+1. `appfin/package.json` estava com resíduos de merge (`=======`) e scripts duplicados — revisado para JSON válido
+2. Build do site Ultimatz falhava offline por download automático de fontes Google — fonte agora carregada via CSS e script `build` força `NEXT_DISABLE_FONT_DOWNLOADS`
+3. Página `appfin/src/app/auth/signin/page.tsx` não envolvia `useSearchParams` em `Suspense`, impedindo o prerender — componente reestruturado
+4. Ausência de rota `/appfin` no Next.js principal — criada página de integração com instruções e redirecionamento condicionado à variável de ambiente
+
+### Como executar os projetos em conjunto
+
+```bash
+# 1. Site institucional
+cd ultimatz
+npm install
+npm run dev
+
+# 2. AppFin (porta alternativa para coexistir)
+cd ../appfin
+npm install
+npm run dev -- --port 3001
+```
+
+Configure a variável `NEXT_PUBLIC_APPFIN_URL` no `.env.local` do site principal para apontar para a URL local ou publicada do AppFin (ex.: `http://localhost:3001`).
+
+### To-Do recomendado
+
+- [ ] Definir `NEXT_PUBLIC_APPFIN_URL` e URLs finais de produção antes do deploy
+- [ ] Preencher `.env` do AppFin com credenciais de Google OAuth, Gemini e banco PostgreSQL (o schema Prisma usa `provider = "postgresql"`)
+- [ ] Revisar documentação do AppFin (`appfin/README.md`) para alinhar instruções de banco local (hoje menciona SQLite, mas o schema aponta para PostgreSQL)
+- [ ] Configurar migrações `prisma migrate` e rotinas de seed antes do go-live
+- [ ] Tratar aviso do Next.js sobre múltiplos lockfiles caso seja necessário consolidar a pipeline de CI/CD
+
 ## 👨‍💻 Desenvolvimento
 
 - **Responsável**: Cursor (Claude) - Todo desenvolvimento técnico

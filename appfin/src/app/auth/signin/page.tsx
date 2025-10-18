@@ -2,9 +2,9 @@
 
 import { signIn, getSession } from 'next-auth/react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { Suspense, useEffect, useState } from 'react'
 
-export default function SignIn() {
+function SignInContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [isLoading, setIsLoading] = useState(false)
@@ -60,13 +60,13 @@ export default function SignIn() {
             Sistema de Gestão Financeira <s>ainda não tão</s> Inteligente
           </p>
         </div>
-        
+
         {error && (
           <div className="bg-red-50 border border-red-200 rounded-md p-4">
             <p className="text-sm text-red-600">{error}</p>
           </div>
         )}
-        
+
         <div className="mt-8 space-y-6">
           <div className="space-y-4">
             <button
@@ -83,7 +83,7 @@ export default function SignIn() {
                 'Entrar com Google'
               )}
             </button>
-            
+
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
                 <div className="w-full border-t border-gray-300" />
@@ -92,12 +92,12 @@ export default function SignIn() {
                 <span className="px-2 bg-gray-50 text-gray-500">ou</span>
               </div>
             </div>
-            
+
             {/* GIF Animado */}
             <div className="flex justify-center mt-4">
-              <img 
-                src="/loading-animation.gif" 
-                alt="Carregando..." 
+              <img
+                src="/loading-animation.gif"
+                alt="Carregando..."
                 className="w-50 h-50"
               />
             </div>
@@ -105,5 +105,19 @@ export default function SignIn() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function SignIn() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center bg-gray-50">
+          <p className="text-gray-600">Carregando tela de autenticação...</p>
+        </div>
+      }
+    >
+      <SignInContent />
+    </Suspense>
   )
 }
